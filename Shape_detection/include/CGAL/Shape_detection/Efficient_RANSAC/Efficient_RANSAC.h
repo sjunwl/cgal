@@ -551,82 +551,82 @@ public:
       best_expected = 0;
 
       if (keep_searching)
-      do {
-        // Generate candidates
-        //1. pick a point p1 randomly among available points
-        std::set<std::size_t> indices;
-        bool done = false;
         do {
-          do
-            first_sample = get_default_random()(
-                    static_cast<unsigned int>(m_num_available_points));
-          while (m_shape_index[first_sample] != -1);
+          // Generate candidates
+          //1. pick a point p1 randomly among available points
+          std::set<std::size_t> indices;
+          bool done = false;
+          do {
+            do
+              first_sample = get_default_random()(
+                      static_cast<unsigned int>(m_num_available_points));
+            while (m_shape_index[first_sample] != -1);
 
-          done =
-                  drawSamplesFromCellContainingPoint(m_global_octree,
-                                                     get(m_point_pmap,
-                                                         *(m_input_iterator_first + first_sample)),
-                                                     select_random_octree_level(),
-                                                     indices,
-                                                     m_shape_index,
-                                                     required_samples);
+            done =
+                    drawSamplesFromCellContainingPoint(m_global_octree,
+                                                       get(m_point_pmap,
+                                                           *(m_input_iterator_first + first_sample)),
+                                                       select_random_octree_level(),
+                                                       indices,
+                                                       m_shape_index,
+                                                       required_samples);
 
-          if (callback && !callback(num_invalid / double(m_num_total_points)))
-            return false;
+            if (callback && !callback(num_invalid / double(m_num_total_points)))
+              return false;
 
-        } while (m_shape_index[first_sample] != -1 || !done);
+          } while (m_shape_index[first_sample] != -1 || !done);
 
-        generated_candidates++;
+          generated_candidates++;
 
-        //add candidate for each type of primitives
-        for (typename std::vector<Shape *(*)()>::iterator it =
-                m_shape_factories.begin(); it != m_shape_factories.end(); it++) {
-          if (callback && !callback(num_invalid / double(m_num_total_points)))
-            return false;
-          Shape *p = (Shape *) (*it)();
-          //compute the primitive and says if the candidate is valid
-          p->compute(indices,
-                     m_input_iterator_first,
-                     m_traits,
-                     m_point_pmap,
-                     m_normal_pmap,
-                     m_options.epsilon,
-                     m_options.normal_threshold);
+          //add candidate for each type of primitives
+          for (typename std::vector<Shape *(*)()>::iterator it =
+                  m_shape_factories.begin(); it != m_shape_factories.end(); it++) {
+            if (callback && !callback(num_invalid / double(m_num_total_points)))
+              return false;
+            Shape *p = (Shape *) (*it)();
+            //compute the primitive and says if the candidate is valid
+            p->compute(indices,
+                       m_input_iterator_first,
+                       m_traits,
+                       m_point_pmap,
+                       m_normal_pmap,
+                       m_options.epsilon,
+                       m_options.normal_threshold);
 
-          if (p->is_valid()) {
-            improve_bound(p, m_num_available_points - num_invalid, 1, 500);
+            if (p->is_valid()) {
+              improve_bound(p, m_num_available_points - num_invalid, 1, 500);
 
-            //evaluate the candidate
-            if (p->max_bound() >= m_options.min_points && p->score() > 0) {
-              if (best_expected < p->expected_value())
-                best_expected = p->expected_value();
+              //evaluate the candidate
+              if (p->max_bound() >= m_options.min_points && p->score() > 0) {
+                if (best_expected < p->expected_value())
+                  best_expected = p->expected_value();
 
-              candidates.push_back(p);
+                candidates.push_back(p);
+              } else {
+                failed_candidates++;
+                delete p;
+              }
             } else {
               failed_candidates++;
               delete p;
             }
-          } else {
-            failed_candidates++;
-            delete p;
           }
-        }
 
-        if (failed_candidates >= limit_failed_candidates) {
-          force_exit = true;
-        }
+          if (failed_candidates >= limit_failed_candidates) {
+            force_exit = true;
+          }
 
-        keep_searching = (stop_probability(m_options.min_points,
-                                           m_num_available_points - num_invalid,
-                                           generated_candidates, m_global_octree->maxLevel())
-                          > m_options.probability);
-      } while (!force_exit
-               && stop_probability((std::size_t) best_expected,
-                                   m_num_available_points - num_invalid,
-                                   generated_candidates,
-                                   m_global_octree->maxLevel())
-                  > m_options.probability
-               && keep_searching);
+          keep_searching = (stop_probability(m_options.min_points,
+                                             m_num_available_points - num_invalid,
+                                             generated_candidates, m_global_octree->maxLevel())
+                            > m_options.probability);
+        } while (!force_exit
+                 && stop_probability((std::size_t) best_expected,
+                                     m_num_available_points - num_invalid,
+                                     generated_candidates,
+                                     m_global_octree->maxLevel())
+                    > m_options.probability
+                 && keep_searching);
       // end of generate candidate
 
       if (force_exit) {
@@ -1113,27 +1113,28 @@ private:
 
     std::cerr << (cur ? "  node found" : "  node not found") << std::endl;
 
-    if (cur) {
-      std::size_t enough = 0;
-      for (std::size_t i = cur->first; i <= cur->last; i++) {
-        std::size_t j = octree->index(i);
-        if (shapeIndex[j] == -1) {
-          enough++;
-          if (enough >= requiredSamples)
-            break;
-        }
-      }
-      if (enough >= requiredSamples) {
-        do {
-          std::size_t p = CGAL::get_default_random().
-                  uniform_int<std::size_t>(0, cur->size() - 1);
-          std::size_t j = octree->index(cur->first + p);
-          if (shapeIndex[j] == -1)
-            indices.insert(j);
-        } while (indices.size() < requiredSamples);
+    if (!cur)
+      return false;
 
-        return true;
-      } else return false;
+    std::size_t enough = 0;
+    for (std::size_t i = cur->first; i <= cur->last; i++) {
+      std::size_t j = octree->index(i);
+      if (shapeIndex[j] == -1) {
+        enough++;
+        if (enough >= requiredSamples)
+          break;
+      }
+    }
+    if (enough >= requiredSamples) {
+      do {
+        std::size_t p = CGAL::get_default_random().
+                uniform_int<std::size_t>(0, cur->size() - 1);
+        std::size_t j = octree->index(cur->first + p);
+        if (shapeIndex[j] == -1)
+          indices.insert(j);
+      } while (indices.size() < requiredSamples);
+
+      return true;
     } else return false;
   }
 

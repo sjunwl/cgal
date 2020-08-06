@@ -1085,8 +1085,9 @@ private:
     std::cerr << "drawSamplesFromCellContainingPoint" << std::endl;
     std::cerr << "  point: " << p << std::endl;
     std::cerr << "  level: " << level << std::endl;
-//    std::cerr << "            indices: " << indices << std::endl;
+    std::cerr << "  indices size: " << indices.size() << std::endl;
     std::cerr << "  required samples: " << requiredSamples << std::endl;
+    std::cerr << "  ~~~~~~~~~~~~~~~~~~~~ " << std::endl;
 
     typedef typename Octree::Cell Cell;
 
@@ -1109,6 +1110,8 @@ private:
         else cur = (upperX) ? cur->child[6] : cur->child[7];
       }
     }
+
+    std::cerr << (cur ? "  node found" : "  node not found") << std::endl;
 
     if (cur) {
       std::size_t enough = 0;

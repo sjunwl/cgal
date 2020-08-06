@@ -554,86 +554,99 @@ public:
     bool force_exit = false;
     bool keep_searching = true;
 
+    std::cerr << "    Start main loop" << std::endl;
     do { // main loop
       best_expected = 0;
 
       if (keep_searching)
+        std::cerr << "      Keep searching (start second loop)" << std::endl;
+      do {
+        // Generate candidates
+        //1. pick a point p1 randomly among available points
+        std::set<std::size_t> indices;
+        bool done = false;
+        std::cerr << "        Pick a random point (start third loop)" << std::endl;
         do {
-          // Generate candidates
-          //1. pick a point p1 randomly among available points
-          std::set<std::size_t> indices;
-          bool done = false;
-          do {
-            do
-              first_sample = get_default_random()(
-                      static_cast<unsigned int>(m_num_available_points));
-            while (m_shape_index[first_sample] != -1);
+          do
+            first_sample = get_default_random()(
+                    static_cast<unsigned int>(m_num_available_points));
+          while (m_shape_index[first_sample] != -1);
 
-            done =
-                    drawSamplesFromCellContainingPoint(m_global_octree,
-                                                       get(m_point_pmap,
-                                                           *(m_input_iterator_first + first_sample)),
-                                                       select_random_octree_level(),
-                                                       indices,
-                                                       m_shape_index,
-                                                       required_samples);
+          std::cerr << "          Chose sample " << first_sample << " from " << m_num_available_points << " points"
+                    << std::endl;
 
-            if (callback && !callback(num_invalid / double(m_num_total_points)))
-              return false;
+          int num_marked_points;
+          for (int i = 0; i < m_num_available_points; ++i) {
+            if (m_shape_index[i] == -1)
+              num_marked_points;
+          }
+          std::cerr << "          " << num_marked_points << " indices = -1" << std::endl;
 
-          } while (m_shape_index[first_sample] != -1 || !done);
+          done =
+                  drawSamplesFromCellContainingPoint(m_global_octree,
+                                                     get(m_point_pmap,
+                                                         *(m_input_iterator_first + first_sample)),
+                                                     select_random_octree_level(),
+                                                     indices,
+                                                     m_shape_index,
+                                                     required_samples);
 
-          generated_candidates++;
+          if (callback && !callback(num_invalid / double(m_num_total_points)))
+            return false;
 
-          //add candidate for each type of primitives
-          for (typename std::vector<Shape *(*)()>::iterator it =
-                  m_shape_factories.begin(); it != m_shape_factories.end(); it++) {
-            if (callback && !callback(num_invalid / double(m_num_total_points)))
-              return false;
-            Shape *p = (Shape *) (*it)();
-            //compute the primitive and says if the candidate is valid
-            p->compute(indices,
-                       m_input_iterator_first,
-                       m_traits,
-                       m_point_pmap,
-                       m_normal_pmap,
-                       m_options.epsilon,
-                       m_options.normal_threshold);
+        } while (m_shape_index[first_sample] != -1 || !done);
 
-            if (p->is_valid()) {
-              improve_bound(p, m_num_available_points - num_invalid, 1, 500);
+        generated_candidates++;
 
-              //evaluate the candidate
-              if (p->max_bound() >= m_options.min_points && p->score() > 0) {
-                if (best_expected < p->expected_value())
-                  best_expected = p->expected_value();
+        //add candidate for each type of primitives
+        for (typename std::vector<Shape *(*)()>::iterator it =
+                m_shape_factories.begin(); it != m_shape_factories.end(); it++) {
+          if (callback && !callback(num_invalid / double(m_num_total_points)))
+            return false;
+          Shape *p = (Shape *) (*it)();
+          //compute the primitive and says if the candidate is valid
+          p->compute(indices,
+                     m_input_iterator_first,
+                     m_traits,
+                     m_point_pmap,
+                     m_normal_pmap,
+                     m_options.epsilon,
+                     m_options.normal_threshold);
 
-                candidates.push_back(p);
-              } else {
-                failed_candidates++;
-                delete p;
-              }
+          if (p->is_valid()) {
+            improve_bound(p, m_num_available_points - num_invalid, 1, 500);
+
+            //evaluate the candidate
+            if (p->max_bound() >= m_options.min_points && p->score() > 0) {
+              if (best_expected < p->expected_value())
+                best_expected = p->expected_value();
+
+              candidates.push_back(p);
             } else {
               failed_candidates++;
               delete p;
             }
+          } else {
+            failed_candidates++;
+            delete p;
           }
+        }
 
-          if (failed_candidates >= limit_failed_candidates) {
-            force_exit = true;
-          }
+        if (failed_candidates >= limit_failed_candidates) {
+          force_exit = true;
+        }
 
-          keep_searching = (stop_probability(m_options.min_points,
-                                             m_num_available_points - num_invalid,
-                                             generated_candidates, m_global_octree->maxLevel())
-                            > m_options.probability);
-        } while (!force_exit
-                 && stop_probability((std::size_t) best_expected,
-                                     m_num_available_points - num_invalid,
-                                     generated_candidates,
-                                     m_global_octree->maxLevel())
-                    > m_options.probability
-                 && keep_searching);
+        keep_searching = (stop_probability(m_options.min_points,
+                                           m_num_available_points - num_invalid,
+                                           generated_candidates, m_global_octree->maxLevel())
+                          > m_options.probability);
+      } while (!force_exit
+               && stop_probability((std::size_t) best_expected,
+                                   m_num_available_points - num_invalid,
+                                   generated_candidates,
+                                   m_global_octree->maxLevel())
+                  > m_options.probability
+               && keep_searching);
       // end of generate candidate
 
       if (force_exit) {
@@ -910,6 +923,9 @@ private:
 
   Shape *get_best_candidate(std::vector<Shape *> &candidates,
                             const std::size_t num_available_points) {
+
+    std::cerr << "  Get best candidate" << std::endl;
+
     if (candidates.size() == 1)
       return candidates.back();
 
@@ -968,6 +984,9 @@ private:
                      std::size_t num_available_points,
                      std::size_t max_subset,
                      std::size_t min_points) {
+
+    std::cerr << "    Improve bound" << std::endl;
+
     if (candidate->m_nb_subset_used >= max_subset)
       return false;
 
@@ -1032,6 +1051,8 @@ private:
                     FT epsilon,
                     FT normal_threshold) {
 
+    std::cerr << "  Score" << std::endl;
+
     typedef typename Octree::Cell Cell;
 
     std::stack<const Cell *> stack;
@@ -1084,6 +1105,8 @@ private:
                                           std::set<std::size_t> &indices,
                                           const std::vector<int> &shapeIndex,
                                           std::size_t requiredSamples) {
+
+    std::cerr << "  Draw samples from cell" << std::endl;
 
     typedef typename Octree::Cell Cell;
 

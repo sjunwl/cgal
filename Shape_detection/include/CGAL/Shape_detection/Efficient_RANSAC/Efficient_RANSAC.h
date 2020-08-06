@@ -1075,25 +1075,11 @@ private:
   }
 
   template<class Octree>
-  bool drawSamplesFromCellContainingPoint(const Octree *octree,
-                                          const Point &p,
-                                          std::size_t level,
-                                          std::set<std::size_t> &indices,
-                                          const std::vector<int> &shapeIndex,
-                                          std::size_t requiredSamples) {
+  const typename Octree::Cell *node_containing_point(const Octree *octree, const Point &p, std::size_t level) {
 
-    std::cerr << "drawSamplesFromCellContainingPoint" << std::endl;
-    std::cerr << "  point: " << p << std::endl;
-    std::cerr << "  level: " << level << std::endl;
-    std::cerr << "  indices size: " << indices.size() << std::endl;
-    std::cerr << "  required samples: " << requiredSamples << std::endl;
-    std::cerr << "  ~~~~~~~~~~~~~~~~~~~~ " << std::endl;
-
-    typedef typename Octree::Cell Cell;
-
+    // Find the node containing the point
     bool upperZ, upperY, upperX;
-    const Cell *cur = octree->root();
-
+    const typename Octree::Cell *cur = octree->root();
     while (cur && cur->depth() < level) {
       upperX = cur->barycenter().x() <= p.x();
       upperY = cur->barycenter().y() <= p.y();
@@ -1110,6 +1096,29 @@ private:
         else cur = (upperX) ? cur->child[6] : cur->child[7];
       }
     }
+
+    return cur;
+  }
+
+  template<class Octree>
+  bool drawSamplesFromCellContainingPoint(const Octree *octree,
+                                          const Point &p,
+                                          std::size_t level,
+                                          std::set<std::size_t> &indices,
+                                          const std::vector<int> &shapeIndex,
+                                          std::size_t requiredSamples) {
+
+    std::cerr << "drawSamplesFromCellContainingPoint" << std::endl;
+    std::cerr << "  point: " << p << std::endl;
+    std::cerr << "  level: " << level << std::endl;
+    std::cerr << "  indices size: " << indices.size() << std::endl;
+    std::cerr << "  required samples: " << requiredSamples << std::endl;
+    std::cerr << "  ~~~~~~~~~~~~~~~~~~~~ " << std::endl;
+
+    typedef typename Octree::Cell Cell;
+
+    // Find the cell containing the point
+    const Cell *cur = node_containing_point(octree, p, level);
 
     std::cerr << (cur ? "  node found" : "  node not found") << std::endl;
 

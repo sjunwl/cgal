@@ -477,14 +477,10 @@ public:
         (m_input_iterator_beyond - m_input_iterator_first) == 0)
       return false;
 
-    std::cout << *(m_input_iterator_first + 0) << std::endl;
-
     if (m_num_subsets == 0 || m_global_octree == 0) {
       if (!preprocess())
         return false;
     }
-
-    std::cout << *(m_input_iterator_first + 0) << std::endl;
 
     if (callback && !callback(0.))
       return false;
@@ -902,8 +898,9 @@ public:
 
 private:
   int select_random_octree_level() {
-    return (int) get_default_random()(
-            static_cast<unsigned int>(m_global_octree->maxLevel() + 1));
+    std::cout << m_global_octree->maxLevel() << std::endl;
+    auto upper_bound = static_cast<unsigned int>(m_global_octree->maxLevel() + 1);
+    return (int) get_default_random()(upper_bound);
   }
 
   Shape *get_best_candidate(std::vector<Shape *> &candidates,

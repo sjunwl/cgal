@@ -1130,13 +1130,10 @@ private:
 
     // Count point indices that map to -1 in the shape index
     std::size_t enough = 0;
-    for (std::size_t i = cur->first; i <= cur->last; i++) {
+    for (std::size_t i = cur->first; (i <= cur->last) && (enough < requiredSamples); i++) {
       std::size_t j = octree->index(i);
-      if (shapeIndex[j] == -1) {
+      if (shapeIndex[j] == -1)
         enough++;
-        if (enough >= requiredSamples)
-          break;
-      }
     }
 
     std::cerr << "  enough: " << enough << std::endl;

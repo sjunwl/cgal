@@ -1132,26 +1132,28 @@ private:
     std::size_t enough = 0;
     for (std::size_t i = cur->first; (i <= cur->last) && (enough < requiredSamples); i++) {
       std::size_t j = octree->index(i);
+
+      std::cerr << "  j: " << j << std::endl;
       if (shapeIndex[j] == -1)
         enough++;
     }
 
     std::cerr << "  enough: " << enough << std::endl;
 
-    if (enough >= requiredSamples) {
-      do {
-        std::size_t p = CGAL::get_default_random().
-                uniform_int<std::size_t>(0, cur->size() - 1);
-        std::size_t j = octree->index(cur->first + p);
+    // Make sure we found enough samples
+    if (enough < requiredSamples)
+      return false;
 
-        std::cerr << "  j: " << j << std::endl;
+    do {
+      std::size_t p = CGAL::get_default_random().
+              uniform_int<std::size_t>(0, cur->size() - 1);
+      std::size_t j = octree->index(cur->first + p);
 
-        if (shapeIndex[j] == -1)
-          indices.insert(j);
-      } while (indices.size() < requiredSamples);
+      if (shapeIndex[j] == -1)
+        indices.insert(j);
+    } while (indices.size() < requiredSamples);
 
-      return true;
-    } else return false;
+    return true;
   }
 
 private:

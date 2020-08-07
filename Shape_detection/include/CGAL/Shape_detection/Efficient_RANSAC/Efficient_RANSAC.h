@@ -898,7 +898,6 @@ public:
 
 private:
   int select_random_octree_level() {
-    std::cout << m_global_octree->maxLevel() << std::endl;
     auto upper_bound = static_cast<unsigned int>(m_global_octree->maxLevel() + 1);
     return (int) get_default_random()(upper_bound);
   }
@@ -1029,8 +1028,6 @@ private:
                     FT epsilon,
                     FT normal_threshold) {
 
-    std::cerr << "  Score" << std::endl;
-
     typedef typename Octree::Cell Cell;
 
     std::stack<const Cell *> stack;
@@ -1110,37 +1107,24 @@ private:
                                           const std::vector<int> &shapeIndex,
                                           std::size_t requiredSamples) {
 
-    std::cerr << "drawSamplesFromCellContainingPoint" << std::endl;
-    std::cerr << "  point: " << p << std::endl;
-    std::cerr << "  level: " << level << std::endl;
-    std::cerr << "  indices size: " << indices.size() << std::endl;
-    std::cerr << "  required samples: " << requiredSamples << std::endl;
-    std::cerr << "  ~~~~~~~~~~~~~~~~~~~~ " << std::endl;
-
     typedef typename Octree::Cell Cell;
 
     // Find the cell containing the point
     const Cell *cur = node_containing_point(octree, p, level);
 
-    std::cerr << (cur ? "  node found" : "  node not found") << std::endl;
-
     // Stop if the node we need doesn't exist
     if (!cur)
       return false;
-
-    std::cerr << "    points contained: " << cur->size() << std::endl;
 
     // Count point indices that map to -1 in the shape index
     std::size_t enough = 0;
     for (std::size_t i = cur->first; (i <= cur->last) && (enough < requiredSamples); i++) {
       std::size_t j = octree->index(i);
 
-      std::cerr << "  j: " << j << std::endl;
       if (shapeIndex[j] == -1)
         enough++;
     }
 
-    std::cerr << "  enough: " << enough << std::endl;
 
     // Make sure we found enough samples
     if (enough < requiredSamples)
